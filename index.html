@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>simon says | kafirp | siryavuz</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div class="container">
+
+        <div class="interface">
+            <!-- <div class="interface__row">
+                <div>grid size</div>
+                <div>time</div>
+                <div>sequence length</div>
+            </div> -->
+            <div class="interface__row">
+                <input onchange="keypad.handleSizeChange()" id="sizeInput" value="4" class="interface__input" />
+                <div class="interface__timer" id="timer">0.0000</div>
+                <input onchange="keypad.handleSequenceChange()" id="sequenceInput" value="2" class="interface__input" />
+            </div>
+        </div>
+        <div class="keypad" id="keypad">
+        </div>
+    </div>
+
+</body>
+
+</html>
+
+<style>
+    .body {
+        margin: 0;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 95vh;
+        background-color: rgba(73, 0, 0, 0);
+        flex-direction: column;
+      
+    }
+
+    .keypad {
+        display: flex;
+        /* border: black solid 2px; */
+        border-radius: 0.9vh;
+        /*   height: 600px; */
+        /*   max-width: 600px; */
+        flex-direction: column;
+        background-color: rgba(35, 35, 126, 0.99);
+        padding: 0.5vh;
+        display: none;
+    }
+
+    .keypad__row {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .keypad__key {
+        height: 25vw;
+        max-height: 200px;
+        width: 25vw;
+        max-width: 200px;
+        margin: 5px;
+        /* border-style: outset; */
+        background-color: rgba(0, 0, 0, 0.474);
+        border-radius: 1vh;
+    }
+
+    .keypad__key:hover {
+        background-color: rgba(211, 211, 211, 0.083);
+        border: 2px solid rgba(35, 35, 126, 0.836);
+    }
+
+    .keypad__key--clicked_correct {
+        background-color: green !important;
+        /* border-style: inset; */
+    }
+
+    .keypad__key--clicked_incorrect {
+        background-color: red !important;
+    }
+
+    .keypad__key--highlight {
+        background-color: blue !important;
+    }
+
+    .interface {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .interface__row {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        display: none;
+    }
+
+    .interface__timer {
+        height: 40px;
+        width: 100px;
+        font-size: 100%;
+        padding-top: 3%;
+        max-width: 40vw;
+        background: darkgrey;
+        text-align: center;
+        border: 1px solid black;
+    }
+
+    .interface__input {
+        width: 120px;
+        max-width: 15vw;
+    }
+</style>
+
+<!-- <script>
+    window.addEventListener("message", (event) => {
+    const data = event.data;
+    const action = data.action;
+    switch (action) {
+        case "startGame":
+            // return $(".keypad").fadeIn(); setTimeout((),) keypad.handleSizeChange();
+            return $(".keypad").fadeIn(); keypad.handleSizeChange(); keypad.drawButtons(3); keypad.reset(6);
+            // return $(".keypad").fadeIn(); setTimeout(() => { const keypad = new Keypad(); keypad.drawButtons(3); keypad.reset(6); }, 1500);
+              
+            // keypad.handleSizeChange();
+            // keypad.drawButtons(3);
+            // keypad.reset(6);
+        case "stopGame":
+        return $(".keypad").fadeOut();
+        // keypad.incorrectKeyClicked();
+        default:
+            return;
+    }
+});
+
+</script> -->
+
+<script>
+     window.addEventListener("message", function (event) {
+    switch (event.data.action) {
+      case "startGame":
+        $(".keypad").fadeIn(); 
+        // str = JSON.stringify(obj);
+        // console.log(JSON.stringify(event.data))
+        // keypad.drawButtons(event.data.gamewidth);
+        // setTimeout(() => {
+            // console.log(event.data.gamescore)
+            // console.log(event.data.gamewidth)
+            keypad.handleSizeChange();
+            keypad.drawButtons(event.data.gamewidth);
+            keypad.reset(event.data.gamescore);
+        // }, 1000);
+        break;
+      case "stopGame": 
+        $(".keypad").fadeOut();
+        break;
+    }
+  });
+</script>
+
+<script>
+    const SEQUENCE_LENGTH = 5;
+    const FIELDSIZE = 4;
+    class Keypad {
+        clickKey(key) {
+            if (!this.lockKeys) {
+                if (this.progress === 0 && this.setProgress === 0) {
+                    this.startTime = new Date();
+                }
+                if (key === this.sequence[this.setProgress]) {
+                    this.correctKeyClicked(key);
+                } else {
+                    this.incorrectKeyClicked();
+                }
+            }
+        }
+        reset(sequenceLength) {
+            this.sequenceLength = sequenceLength;
+            this.setSequence(sequenceLength);
+            this.progress = 0;
+            this.showSequence(0);
+            this.setProgress = 0;
+        }
+
+        setSequence(length) {
+            this.sequence = []
+            for (var i = 0; i < length; i++) {
+                this.sequence.push(Math.floor(Math.random() * Math.floor(this.fieldSize * this.fieldSize)))
+            }
+        }
+        correctKeyClicked(key) {
+            var button = document.getElementById('key_' + (key));
+            this.setProgress += 1;
+            button.className = "keypad__key keypad__key--clicked_correct";
+            var timeout = setTimeout(() => { button.className = "keypad__key" }, 300)
+
+            if (this.setProgress > this.progress) {
+                this.setProgress = 0;
+                if (this.progress + 1 === this.sequenceLength) {
+                    this.blinkKeys(true, 0);
+                    // setTimeout(() => this.reset(this.sequenceLength), 1000)
+                    timeout = 0;
+                    this.setTimerDisplay(this.startTime);
+                    // console.log("basarili")
+                    setTimeout(() =>   $.post('https://yavzu-simonsays/correctgame', JSON.stringify({})), 1500)
+                  
+                   
+                } else {
+                    this.progress += 1;
+                    setTimeout(() => { this.showSequence(this.progress); }, 500);
+                }
+            }
+        }
+        incorrectKeyClicked() {
+            this.blinkKeys(false, 0)
+            setTimeout(() => $.post('https://yavzu-simonsays/incorrectgame', JSON.stringify({})), 1000);
+            
+        }
+
+        async showSequence(progress) {
+            this.lockKeys = true;
+            for (var i = 0; i < (progress + 1); i++) {
+                var highlightButton = document.getElementById("key_" + (this.sequence[i]));
+                await sleep(100);
+                highlightButton.className = 'keypad__key keypad__key--highlight';
+                await sleep(300);
+                highlightButton.className = 'keypad__key';
+                if (i === progress) {
+                    this.lockKeys = false;
+                }
+            }
+        }
+
+        blinkKeys(correct, count = 0) {
+            var keys = document.getElementsByClassName('keypad__key');
+            for (var i = 0; i < keys.length; i++) {
+                if (correct) {
+                    keys[i].className = "keypad__key keypad__key--clicked_correct";
+                } else {
+                    keys[i].className = "keypad__key keypad__key--clicked_incorrect";
+                }
+            }
+            setTimeout(() => {
+                for (var i = 0; i < keys.length; i++) {
+                    keys[i].className = 'keypad__key';
+                }
+            }, 200);
+            if (count < 2) {
+                setTimeout(() => { this.blinkKeys(correct, (count + 1)); }, 300);
+            }
+        }
+
+        setTimerDisplay(startTime) {
+            var timer = document.getElementById('timer');
+            var time = new Date();
+            timer.innerHTML = (time - startTime) / 1000;
+        }
+
+        drawButtons(fieldSize) {
+            this.fieldSize = fieldSize;
+            const keypadContainer = document.getElementById('keypad')
+            while (keypadContainer.firstChild) {
+                keypadContainer.removeChild(keypadContainer.lastChild);
+            }
+            var keyNumber = 0;
+            for (var i = 0; i < fieldSize; i++) {
+                var keypadRow = document.createElement('div');
+                keypadRow.className = "keypad__row";
+                for (var j = 0; j < fieldSize; j++) {
+                    var keypadKey = document.createElement('div');
+                    const keyIdString = keyNumber;
+                    keypadKey.className = "keypad__key";
+                    keypadKey.onclick = () => { keypad.clickKey(keyIdString) };
+                    keypadKey.id = "key_" + keyNumber;
+                    keypadKey.style.height = Math.floor(100 * (1 / (fieldSize + 1))) + "vw";
+                    keypadKey.style.width = Math.floor(100 * (1 / (fieldSize + 1))) + "vw";
+                    keyNumber += 1;
+                    keypadRow.append(keypadKey);
+                }
+                keypadContainer.append(keypadRow);
+            }
+        }
+
+        handleSizeChange() {
+            const sizeInput = document.getElementById('sizeInput');
+            // console.log(sizeInput.value);
+            if (sizeInput.value > 1 && sizeInput.value < 6) {
+                this.drawButtons(parseInt(sizeInput.value));
+            }
+            this.reset(this.sequenceLength);
+        }
+
+        handleSequenceChange() {
+            const sequenceInput = document.getElementById('sequenceInput');
+            this.reset(parseInt(sequenceInput.value));
+        }
+    }
+
+    const keypad = new Keypad();
+    keypad.drawButtons(3);
+
+    keypad.reset(6);
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+</script>
